@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">My Dashboard</h1>
+    <a href="{% url 'skill_create' %}" class="btn btn-primary">Create New Skill</a>
+</div>
+
+<div class="mb-4">
+    <h2 class="h5 mb-3">Incoming Session Requests</h2>
+    {% if incoming_requests %}
+    <div class="table-responsive">
+        <table class="table table-striped align-middle bg-white shadow-sm">
+            <thead>
+                <tr>
+                    <th>Skill</th>
+                    <th>Requester</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Message</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session_request in incoming_requests %}
+                <tr>
+                    <td>{{ session_request.skill.title }}</td>
+                    <td>{{ session_request.requester.username }}</td>
+                    <td>{{ session_request.requested_date }}</td>
+                    <td>{{ session_request.requested_time }}</td>
+                    <td><span class="badge text-bg-secondary">{{ session_request.status|title }}</span></td>
+                    <td>{{ session_request.message }}</td>
+                    <td>
+                        <a href="{% url 'skill_detail' session_request.skill.pk %}"
+                            class="btn btn-sm btn-outline-primary">View Skill</a>
+                        {% if session_request.status == 'pending' %}
+                        <form method="post" action="{% url 'accept_session_request' session_request.pk %}"
+                            class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success">Accept</button>
+                        </form>
+                        <form method="post" action="{% url 'decline_session_request' session_request.pk %}"
+                            class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger">Decline</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">You do not have any incoming session requests yet.</div>
+    {% endif %}
+</div>
+
+{% if skills %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle bg-white shadow-sm">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for skill in skills %}
+            <tr>
+                <td>{{ skill.title }}</td>
+                <td>{{ skill.category }}</td>
+                <td>{{ skill.get_availability_status_display }}</td>
+                <td>{% if skill.is_free %}Free{% else %}${{ skill.price }}{% endif %}</td>
+                <td>
+                    <a href="{% url 'skill_detail' skill.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{% url 'skill_update' skill.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a href="{% url 'skill_delete' skill.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">You have not created any skill posts yet.</div>
+{% endif %}
+{% endblock %}

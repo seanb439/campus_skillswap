@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h1 class="h3">{{ skill.title }}</h1>
+        <p class="text-muted mb-1">Posted by {{ skill.owner.username }} on {{ skill.created_at|date:'M d, Y H:i' }}</p>
+        <p class="text-muted mb-3">Category: {{ skill.category }}</p>
+
+        <p>{{ skill.description }}</p>
+
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item">
+                <strong>Price:</strong>
+                {% if skill.is_free %}
+                Free
+                {% else %}
+                {{ skill.price }}
+                {% endif %}
+            </li>
+            {% if user.is_authenticated %}
+            <div class="mb-4">
+                <h2 class="h5 mb-2">Request a Session</h2>
+                {% if can_request_session and session_request_form %}
+                <form method="post" action="{% url 'request_session' skill.pk %}" class="card card-body">
+                    {% csrf_token %}
+                    {% for field in session_request_form %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">Send Request</button>
+                </form>
+                {% elif user.is_authenticated and user == skill.owner %}
+                <div class="alert alert-info">This is your skill post, so you cannot request a session for it.</div>
+                {% else %}
+                <div class="alert alert-info">Log in to request a session.</div>
+                {% endif %}
+            </div>
+
+            {% if user == skill.owner %}
+            <div class="mb-4">
+                <h2 class="h5 mb-2">Incoming Session Requests</h2>
+                {% if session_requests %}
+                <div class="list-group">
+                    {% for session_request in session_requests %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{{ session_request.requester.username }}</strong>
+                            <span class="badge text-bg-secondary">{{ session_request.status|title }}</span>
+                        </div>
+                        <p class="mb-1">{{ session_request.requested_date }} at {{ session_request.requested_time }}</p>
+                        <p class="mb-1">{{ session_request.message }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-light border">No session requests yet.</div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <li class="list-group-item"><strong>Contact Preference:</strong> {{ skill.get_contact_preference_display }}
+            </li>
+            {% else %}
+            <li class="list-group-item">
+                <strong>Contact Preference:</strong> Login to view contact details.
+            </li>
+            {% endif %}
+            <li class="list-group-item"><strong>Status:</strong> {{ skill.get_availability_status_display }}</li>
+        </ul>
+
+        <div class="mb-4">
+            <h2 class="h5 mb-2">Reviews</h2>
+            <p class="text-muted mb-2">
+                {% if review_count %}
+                Average rating: {{ average_rating|floatformat:1 }} / 5 from {{ review_count }} review{{
+                review_count|pluralize }}
+                {% else %}
+                No reviews yet.
+                {% endif %}
+            </p>
+
+            {% if reviews %}
+            <div class="list-group mb-3">
+                {% for review in reviews %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ review.reviewer.username }}</strong>
+                        <span class="badge text-bg-primary">{{ review.rating }}/5</span>
+                    </div>
+                    <p class="mb-1">{{ review.review_text }}</p>
+                    <small class="text-muted">Posted {{ review.created_at|date:'M d, Y' }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if user.is_authenticated and user != skill.owner %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5">{% if user_review %}Edit Your Review{% else %}Leave a Review{% endif %}</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in review_form %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">Save Review</button>
+                </form>
+            </div>
+        </div>
+        {% elif user.is_authenticated and user == skill.owner %}
+        <div class="alert alert-info">You cannot review your own skill post.</div>
+        {% else %}
+        <div class="alert alert-info">Log in to leave a review.</div>
+        {% endif %}
+
+        <a href="{% url 'skill_list' %}" class="btn btn-outline-secondary">Back</a>
+        {% if user == skill.owner %}
+        <a href="{% url 'skill_update' skill.pk %}" class="btn btn-primary">Edit</a>
+        <a href="{% url 'skill_delete' skill.pk %}" class="btn btn-danger">Delete</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
