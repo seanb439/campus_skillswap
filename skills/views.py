@@ -40,6 +40,7 @@ def skill_list(request):
 	skills = skills.distinct()
 	paginator = Paginator(skills, 9)
 	page_obj = paginator.get_page(request.GET.get('page'))
+	page_numbers = list(paginator.page_range)
 
 	# Show available categories for filter dropdown.
 	raw_categories = Skill.objects.values_list('category', flat=True)
@@ -63,6 +64,7 @@ def skill_list(request):
 	context = {
 		'skills': page_obj.object_list,
 		'page_obj': page_obj,
+		'page_numbers': page_numbers,
 		'query': query,
 		'selected_category': selected_category,
 		'categories': categories,

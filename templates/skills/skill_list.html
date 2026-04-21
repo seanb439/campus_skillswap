@@ -73,12 +73,18 @@
             {% endif %}
         </li>
 
-        {% for page_number in page_obj.paginator.page_range %}
-        <li class="page-item {% if page_number == page_obj.number %}active{% endif %}"
-            aria-current="{% if page_number == page_obj.number %}page{% endif %}">
-            <a class="page-link" href="?page={{ page_number }}{% if query_string %}&{{ query_string }}{% endif %}">{{
-                page_number }}</a>
+        {% for page_num in page_numbers %}
+        {% if page_num == page_obj.number %}
+        <li class="page-item active" aria-current="page">
+            <a class="page-link" href="?page={{ page_num }}{% if query_string %}&{{ query_string }}{% endif %}">{{
+                page_num }}</a>
         </li>
+        {% else %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_num }}{% if query_string %}&{{ query_string }}{% endif %}">{{
+                page_num }}</a>
+        </li>
+        {% endif %}
         {% endfor %}
 
         <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
