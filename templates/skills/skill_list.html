@@ -76,11 +76,13 @@
         {% for page_num in page_numbers %}
         {% if page_num == page_obj.number %}
         <li class="page-item active" aria-current="page">
-            <a class="page-link" href="?page={{ page_num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ page_num }}</a>
+            <a class="page-link" href="?page={{ page_num }}{% if query_string %}&{{ query_string }}{% endif %}">{{
+                page_num }}</a>
         </li>
         {% else %}
         <li class="page-item">
-            <a class="page-link" href="?page={{ page_num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ page_num }}</a>
+            <a class="page-link" href="?page={{ page_num }}{% if query_string %}&{{ query_string }}{% endif %}">{{
+                page_num }}</a>
         </li>
         {% endif %}
         {% endfor %}
