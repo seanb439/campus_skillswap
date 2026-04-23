@@ -102,9 +102,14 @@
         </div>
 
         {% if user.is_authenticated and user != skill.owner %}
+        {% if user_review %}
+        <div class="alert alert-info">You have already reviewed this skill.</div>
+        {% elif not has_completed_session %}
+        <div class="alert alert-info">Complete a session for this skill before leaving a review.</div>
+        {% else %}
         <div class="card mb-3">
             <div class="card-body">
-                <h2 class="h5">{% if user_review %}Edit Your Review{% else %}Leave a Review{% endif %}</h2>
+                <h2 class="h5">Leave a Review</h2>
                 <form method="post">
                     {% csrf_token %}
                     {% for field in review_form %}
@@ -120,6 +125,7 @@
                 </form>
             </div>
         </div>
+        {% endif %}
         {% elif user.is_authenticated and user == skill.owner %}
         <div class="alert alert-info">You cannot review your own skill post.</div>
         {% else %}

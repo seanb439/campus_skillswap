@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.skill_list, name='skill_list'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('dashboard/session-requests/<int:pk>/accept/', views.accept_session_request, name='accept_session_request'),
+    path('dashboard/session-requests/<int:pk>/complete/', views.complete_session_request, name='complete_session_request'),
     path('dashboard/session-requests/<int:pk>/decline/', views.decline_session_request, name='decline_session_request'),
     path('skills/create/', views.skill_create, name='skill_create'),
     path('skills/<int:pk>/', views.skill_detail, name='skill_detail'),

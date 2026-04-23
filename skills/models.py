@@ -97,6 +97,7 @@ class SessionRequest(models.Model):
 	STATUS_CHOICES = [
 		('pending', 'Pending'),
 		('accepted', 'Accepted'),
+		('completed', 'Completed'),
 		('declined', 'Declined'),
 	]
 

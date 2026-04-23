@@ -7,6 +7,43 @@
 </div>
 
 <div class="mb-4">
+    <h2 class="h5 mb-3">My Completed Skills</h2>
+    {% if completed_sessions %}
+    <div class="table-responsive">
+        <table class="table table-striped align-middle bg-white shadow-sm">
+            <thead>
+                <tr>
+                    <th>Skill</th>
+                    <th>Skill Owner</th>
+                    <th>Session Date</th>
+                    <th>Session Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for completed_session in completed_sessions %}
+                <tr>
+                    <td>{{ completed_session.skill.title }}</td>
+                    <td>{{ completed_session.skill.owner.username }}</td>
+                    <td>{{ completed_session.requested_date }}</td>
+                    <td>{{ completed_session.requested_time }}</td>
+                    <td><span class="badge text-bg-success">{{ completed_session.status|title }}</span></td>
+                    <td>
+                        <a href="{% url 'skill_detail' completed_session.skill.pk %}"
+                            class="btn btn-sm btn-outline-primary">View Skill</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">You have not completed any skills yet.</div>
+    {% endif %}
+</div>
+
+<div class="mb-4">
     <h2 class="h5 mb-3">Incoming Session Requests</h2>
     {% if incoming_requests %}
     <div class="table-responsive">
@@ -45,6 +82,12 @@
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-danger">Decline</button>
                         </form>
+                        {% elif session_request.status == 'accepted' %}
+                        <form method="post" action="{% url 'complete_session_request' session_request.pk %}"
+                            class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-primary">Mark Completed</button>
+                        </form>
                         {% endif %}
                     </td>
                 </tr>
@@ -57,36 +100,39 @@
     {% endif %}
 </div>
 
-{% if skills %}
-<div class="table-responsive">
-    <table class="table table-striped align-middle bg-white shadow-sm">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Price</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for skill in skills %}
-            <tr>
-                <td>{{ skill.title }}</td>
-                <td>{{ skill.category }}</td>
-                <td>{{ skill.get_availability_status_display }}</td>
-                <td>{% if skill.is_free %}Free{% else %}${{ skill.price }}{% endif %}</td>
-                <td>
-                    <a href="{% url 'skill_detail' skill.pk %}" class="btn btn-sm btn-outline-primary">View</a>
-                    <a href="{% url 'skill_update' skill.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <a href="{% url 'skill_delete' skill.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="mb-4">
+    <h2 class="h5 mb-3">My Skills</h2>
+    {% if skills %}
+    <div class="table-responsive">
+        <table class="table table-striped align-middle bg-white shadow-sm">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Price</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for skill in skills %}
+                <tr>
+                    <td>{{ skill.title }}</td>
+                    <td>{{ skill.category }}</td>
+                    <td>{{ skill.get_availability_status_display }}</td>
+                    <td>{% if skill.is_free %}Free{% else %}${{ skill.price }}{% endif %}</td>
+                    <td>
+                        <a href="{% url 'skill_detail' skill.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                        <a href="{% url 'skill_update' skill.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a href="{% url 'skill_delete' skill.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">You have not created any skill posts yet.</div>
+    {% endif %}
 </div>
-{% else %}
-<div class="alert alert-info">You have not created any skill posts yet.</div>
-{% endif %}
 {% endblock %}

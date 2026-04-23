@@ -81,18 +81,33 @@ def skill_detail(request, pk):
 	user_review = None
 	review_form = None
 	session_request_form = None
-	can_review = request.user.is_authenticated and request.user != skill.owner
+	can_review = False
 	can_request_session = request.user.is_authenticated and request.user != skill.owner
+	has_completed_session = False
 
 	if request.user.is_authenticated:
 		user_review = reviews.filter(reviewer=request.user).first()
+		has_completed_session = SessionRequest.objects.filter(
+			skill=skill,
+			requester=request.user,
+			status='completed',
+		).exists()
+		can_review = request.user != skill.owner and has_completed_session and user_review is None
 
 	if request.method == 'POST':
-		if not can_review:
+		if request.user == skill.owner:
 			messages.error(request, 'You cannot review your own skill.')
 			return redirect('skill_detail', pk=skill.pk)
 
-		review_form = ReviewForm(request.POST, instance=user_review)
+		if user_review is not None:
+			messages.error(request, 'You have already reviewed this skill.')
+			return redirect('skill_detail', pk=skill.pk)
+
+		if not has_completed_session:
+			messages.error(request, 'You can leave a review only after completing a session for this skill.')
+			return redirect('skill_detail', pk=skill.pk)
+
+		review_form = ReviewForm(request.POST)
 		if review_form.is_valid():
 			review = review_form.save(commit=False)
 			review.skill = skill
@@ -116,6 +131,7 @@ def skill_detail(request, pk):
 		'session_request_form': session_request_form,
 		'can_review': can_review,
 		'can_request_session': can_request_session,
+		'has_completed_session': has_completed_session,
 		'user_review': user_review,
 	}
 	return render(request, 'skills/skill_detail.html', context)
@@ -153,12 +169,18 @@ def dashboard(request):
 		.filter(skill__owner=request.user)
 		.order_by('-created_at')
 	)
+	completed_sessions = (
+		SessionRequest.objects.select_related('skill', 'skill__owner')
+		.filter(requester=request.user, status='completed')
+		.order_by('-updated_at')
+	)
 	return render(
 		request,
 		'skills/dashboard.html',
 		{
 			'skills': user_skills,
 			'incoming_requests': incoming_requests,
+			'completed_sessions': completed_sessions,
 		},
 	)
 
@@ -177,6 +199,27 @@ def accept_session_request(request, pk):
 	session_request.status = 'accepted'
 	session_request.save(update_fields=['status', 'updated_at'])
 	messages.success(request, 'Session request accepted.')
+	return redirect('dashboard')
+
+
+@login_required
+def complete_session_request(request, pk):
+	session_request = get_object_or_404(SessionRequest, pk=pk, skill__owner=request.user)
+
+	if request.method != 'POST':
+		return redirect('dashboard')
+
+	if session_request.status == 'completed':
+		messages.info(request, 'This request has already been marked as completed.')
+		return redirect('dashboard')
+
+	if session_request.status != 'accepted':
+		messages.error(request, 'Only accepted requests can be marked as completed.')
+		return redirect('dashboard')
+
+	session_request.status = 'completed'
+	session_request.save(update_fields=['status', 'updated_at'])
+	messages.success(request, 'Session request marked as completed.')
 	return redirect('dashboard')
 
 

@@ -143,6 +143,14 @@ class SkillPermissionViewTests(TestCase):
 		self.assertNotContains(response, 'Login to view contact details.')
 
 	def test_logged_in_user_can_create_review(self):
+		SessionRequest.objects.create(
+			skill=self.skill,
+			requester=self.other_user,
+			requested_date='2026-05-01',
+			requested_time='14:30',
+			message='Completed session request.',
+			status='completed',
+		)
 		self.client.login(username='other', password='Pass12345!')
 		payload = {
 			'rating': 5,
@@ -156,6 +164,45 @@ class SkillPermissionViewTests(TestCase):
 		self.assertEqual(review.reviewer, self.other_user)
 		self.assertEqual(review.rating, 5)
 		self.assertEqual(review.review_text, 'Excellent help and very clear explanations.')
+
+	def test_user_cannot_review_without_completed_session(self):
+		self.client.login(username='other', password='Pass12345!')
+		payload = {
+			'rating': 4,
+			'review_text': 'Trying to review too early.',
+		}
+
+		response = self.client.post(reverse('skill_detail', args=[self.skill.pk]), payload)
+
+		self.assertEqual(response.status_code, 302)
+		self.assertFalse(self.skill.reviews.exists())
+
+	def test_user_cannot_leave_more_than_one_review_for_same_skill(self):
+		SessionRequest.objects.create(
+			skill=self.skill,
+			requester=self.other_user,
+			requested_date='2026-05-01',
+			requested_time='14:30',
+			message='Completed session request.',
+			status='completed',
+		)
+		self.client.login(username='other', password='Pass12345!')
+		first_payload = {
+			'rating': 5,
+			'review_text': 'First review text.',
+		}
+		second_payload = {
+			'rating': 1,
+			'review_text': 'Second review text should not be saved.',
+		}
+
+		self.client.post(reverse('skill_detail', args=[self.skill.pk]), first_payload)
+		response = self.client.post(reverse('skill_detail', args=[self.skill.pk]), second_payload)
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(self.skill.reviews.count(), 1)
+		review = self.skill.reviews.get()
+		self.assertEqual(review.review_text, 'First review text.')
 
 	def test_owner_cannot_review_own_skill(self):
 		self.client.login(username='owner', password='Pass12345!')
@@ -217,6 +264,24 @@ class SkillPermissionViewTests(TestCase):
 		self.assertContains(response, 'Please accept my request.')
 		self.assertContains(response, 'other')
 
+	def test_dashboard_shows_completed_skills_for_requester(self):
+		SessionRequest.objects.create(
+			skill=self.skill,
+			requester=self.other_user,
+			requested_date='2026-05-01',
+			requested_time='14:30',
+			message='Completed tutoring session.',
+			status='completed',
+		)
+		self.client.login(username='other', password='Pass12345!')
+
+		response = self.client.get(reverse('dashboard'))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'My Completed Skills')
+		self.assertContains(response, 'Chemistry Tutor')
+		self.assertContains(response, 'owner')
+
 	def test_owner_can_accept_incoming_session_request(self):
 		request_obj = SessionRequest.objects.create(
 			skill=self.skill,
@@ -230,6 +295,40 @@ class SkillPermissionViewTests(TestCase):
 		response = self.client.post(reverse('accept_session_request', args=[request_obj.pk]))
 
 		self.assertEqual(response.status_code, 302)
+		request_obj.refresh_from_db()
+		self.assertEqual(request_obj.status, 'accepted')
+
+	def test_owner_can_mark_accepted_session_request_completed(self):
+		request_obj = SessionRequest.objects.create(
+			skill=self.skill,
+			requester=self.other_user,
+			requested_date='2026-05-01',
+			requested_time='14:30',
+			message='Please complete my request.',
+			status='accepted',
+		)
+		self.client.login(username='owner', password='Pass12345!')
+
+		response = self.client.post(reverse('complete_session_request', args=[request_obj.pk]))
+
+		self.assertEqual(response.status_code, 302)
+		request_obj.refresh_from_db()
+		self.assertEqual(request_obj.status, 'completed')
+
+	def test_non_owner_cannot_mark_session_request_completed(self):
+		request_obj = SessionRequest.objects.create(
+			skill=self.skill,
+			requester=self.other_user,
+			requested_date='2026-05-01',
+			requested_time='14:30',
+			message='Please complete my request.',
+			status='accepted',
+		)
+		self.client.login(username='other', password='Pass12345!')
+
+		response = self.client.post(reverse('complete_session_request', args=[request_obj.pk]))
+
+		self.assertEqual(response.status_code, 404)
 		request_obj.refresh_from_db()
 		self.assertEqual(request_obj.status, 'accepted')
 
